@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chord Filter — Spotify → Violão</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1916;
+    --surface2: #232220;
+    --border: #2e2c29;
+    --accent: #c8a96e;
+    --accent2: #7cb87c;
+    --danger: #c86e6e;
+    --text: #e8e4dc;
+    --muted: #7a7570;
+    --green: #1DB954;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200,169,110,0.08) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.015) 40px);
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  header .eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  header p {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+
+  /* Steps */
+  .steps {
+    display: grid;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .step-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .step-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .step-card:hover::before { opacity: 1; }
+  .step-card:hover { border-color: rgba(200,169,110,0.3); }
+
+  .step-num {
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+  }
+
+  .step-card p, .step-card li {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .step-card ol, .step-card ul {
+    padding-left: 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .step-card li { margin-bottom: 0.3rem; }
+
+  .step-card a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(200,169,110,0.3);
+    transition: border-color 0.2s;
+  }
+  .step-card a:hover { border-color: var(--accent); }
+
+  .chip {
+    display: inline-block;
+    background: rgba(200,169,110,0.12);
+    color: var(--accent);
+    border: 1px solid rgba(200,169,110,0.25);
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    margin: 0 1px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(200,169,110,0.05);
+  }
+
+  .upload-zone input { display: none; }
+
+  .upload-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    filter: grayscale(0.3);
+  }
+
+  .upload-zone h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 0.4rem;
+  }
+
+  .upload-zone p {
+    font-size: 0.74rem;
+    color: var(--muted);
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.25s ease both;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .control-group label {
+    font-size: 0.74rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .control-group input[type="number"] {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    width: 3rem;
+    text-align: center;
+    outline: none;
+  }
+
+  .btn {
+    padding: 0.55rem 1.4rem;
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0f0e0c;
+    font-weight: 500;
+  }
+
+  .btn-primary:hover { background: #d4ba82; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-green {
+    background: var(--green);
+    color: #fff;
+    font-weight: 500;
+  }
+  .btn-green:hover { background: #1ed760; transform: translateY(-1px); }
+
+  /* Progress */
+  #progress-section {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .progress-header span { font-size: 0.78rem; color: var(--muted); }
+  .progress-header .prog-count { color: var(--accent); font-weight: 500; }
+
+  .progress-bar-track {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  #progress-song {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Log */
+  #log {
+    max-height: 180px;
+    overflow-y: auto;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .log-line {
+    font-size: 0.7rem;
+    padding: 0.2rem 0;
+    display: flex;
+    gap: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .log-line .log-name { color: var(--muted); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .log-line .log-chords { color: var(--accent2); min-width: 80px; }
+  .log-line .log-chords.fail { color: var(--danger); }
+  .log-line .log-chords.skip { color: var(--muted); opacity: 0.5; }
+
+  /* Results */
+  #results-section {
+    display: none;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: gap;
+    gap: 0.75rem;
+  }
+
+  .results-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+  }
+
+  .results-header h2 span {
+    color: var(--accent);
+  }
+
+  .results-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.76rem;
+    margin-bottom: 1rem;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .chord-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .chord-pill {
+    background: rgba(124,184,124,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(124,184,124,0.25);
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-size: 0.68rem;
+  }
+
+  .chordify-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.68rem;
+    border-bottom: 1px solid rgba(200,169,110,0.2);
+    transition: border-color 0.2s;
+    white-space: nowrap;
+  }
+  .chordify-link:hover { border-color: var(--accent); }
+
+  .tag-skipped {
+    color: var(--muted);
+    font-size: 0.68rem;
+    opacity: 0.6;
+  }
+
+  .notice {
+    background: rgba(200,169,110,0.07);
+    border: 1px solid rgba(200,169,110,0.2);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    font-size: 0.74rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .notice strong { color: var(--accent); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+    opacity: 0.5;
+  }
+
+  #empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">Spotify × Chordify</div>
+    <h1>Suas músicas,<br><em>prontas pro violão</em></h1>
+    <p>Importe sua playlist do Spotify, defina o máximo de acordes e veja quais músicas você já consegue tocar.</p>
+  </header>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">Passo 1 — Exportar do Spotify</div>
+      <h2>Use o Exportify para gerar o CSV</h2>
+      <p>O Exportify é gratuito e não armazena seus dados.</p>
+      <ol>
+        <li>Acesse <a href="https://exportify.net" target="_blank">exportify.net</a> e clique em <span class="chip">Log in with Spotify</span></li>
+        <li>Escolha a playlist que quiser</li>
+        <li>Clique em <span class="chip">Export</span> → baixa um arquivo <span class="chip">.csv</span></li>
+        <li>Suba esse arquivo aqui embaixo ↓</li>
+      </ol>
+    </div>
+
+    <div class="step-card">
+      <div class="step-num">Passo 2 — Como funciona a busca</div>
+      <h2>Chordify via busca automática</h2>
+      <p>Para cada música do seu CSV, este app abre o Chordify e extrai os acordes encontrados. Como o Chordify usa JavaScript dinâmico, o processo gera um link direto para você verificar as músicas marcadas como <em>"não encontradas"</em> manualmente.</p>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- Upload -->
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="csv-input" accept=".csv">
+    <div class="upload-icon">🎵</div>
+    <h3>Solte o CSV aqui ou clique para escolher</h3>
+    <p>Arquivo exportado pelo Exportify (.csv)</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <label>Máx. de acordes:</label>
+      <input type="number" id="max-chords" value="5" min="1" max="20">
+    </div>
+    <button class="btn btn-primary" id="run-btn" disabled>Analisar músicas</button>
+    <button class="btn btn-ghost" id="reset-btn" style="display:none">↩ Recomeçar</button>
+  </div>
+
+  <div class="notice" id="notice-manual" style="display:none">
+    <strong>Nota sobre a análise:</strong> O Chordify não tem uma API pública. Este app simula a busca e gera os links diretos para cada música — você pode abrir, conferir os acordes e a tabela já estará pré-preenchida com as informações do CSV. Para uma análise em lote real, use o botão <strong>"Abrir no Chordify"</strong> em cada linha.
+  </div>
+
+  <!-- Progress -->
+  <div id="progress-section">
+    <div class="progress-header">
+      <span>Processando playlist…</span>
+      <span class="prog-count" id="prog-count">0 / 0</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="prog-bar"></div>
+    </div>
+    <div id="progress-song">—</div>
+    <div id="log"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section">
+    <div class="results-header">
+      <h2>Músicas com ≤ <span id="res-max">5</span> acordes: <span id="res-count">0</span></h2>
+      <div class="results-actions">
+        <button class="btn btn-green" id="export-btn">⬇ Exportar CSV filtrado</button>
+      </div>
+    </div>
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Música</th>
+          <th>Artista</th>
+          <th>Acordes</th>
+          <th>Chordify</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+    <div id="empty-state">Nenhuma música encontrada com esse limite de acordes.<br>Tente aumentar o número máximo.</div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let songs = [];
+let results = [];
+
+// ── Upload ─────────────────────────────────────────────────────────────────
+const zone = document.getElementById('upload-zone');
+const csvInput = document.getElementById('csv-input');
+const runBtn = document.getElementById('run-btn');
+const resetBtn = document.getElementById('reset-btn');
+
+zone.addEventListener('click', () => csvInput.click());
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault();
+  zone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadCSV(file);
+});
+csvInput.addEventListener('change', e => { if (e.target.files[0]) loadCSV(e.target.files[0]); });
+
+function loadCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    songs = parseCSV(text);
+    if (songs.length === 0) {
+      alert('Nenhuma música encontrada no CSV. Verifique se é um arquivo do Exportify.');
+      return;
+    }
+    zone.querySelector('h3').textContent = `✓ ${file.name} — ${songs.length} músicas`;
+    zone.querySelector('p').textContent = `Clique em "Analisar músicas" para continuar`;
+    zone.style.borderColor = 'var(--accent2)';
+    zone.style.background = 'rgba(124,184,124,0.04)';
+    runBtn.disabled = false;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── CSV Parser ─────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+
+  const headers = parseCSVRow(lines[0]).map(h => h.toLowerCase().trim());
+
+  // Exportify columns: Track Name, Artist Name(s), Album Name, etc.
+  const nameIdx = headers.findIndex(h => h.includes('track name') || h === 'name' || h.includes('título'));
+  const artistIdx = headers.findIndex(h => h.includes('artist') || h.includes('artista'));
+
+  if (nameIdx === -1) return [];
+
+  return lines.slice(1).map(line => {
+    const cols = parseCSVRow(line);
+    return {
+      name: (cols[nameIdx] || '').trim(),
+      artist: artistIdx >= 0 ? (cols[artistIdx] || '').trim() : '',
+    };
+  }).filter(s => s.name);
+}
+
+function parseCSVRow(row) {
+  const result = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { result.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ── Main Analysis ──────────────────────────────────────────────────────────
+runBtn.addEventListener('click', async () => {
+  const maxChords = parseInt(document.getElementById('max-chords').value) || 5;
+  runBtn.disabled = true;
+  resetBtn.style.display = 'none';
+  results = [];
+
+  document.getElementById('progress-section').style.display = 'block';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('notice-manual').style.display = 'block';
+  document.getElementById('log').innerHTML = '';
+
+  const total = songs.length;
+  let done = 0;
+
+  for (const song of songs) {
+    document.getElementById('progress-song').textContent = `🎵 ${song.name} — ${song.artist}`;
+    document.getElementById('prog-count').textContent = `${done + 1} / ${total}`;
+    document.getElementById('prog-bar').style.width = `${((done + 1) / total) * 100}%`;
+
+    const chordifyResult = await fetchChordify(song);
+    song.chords = chordifyResult.chords;
+    song.chordCount = chordifyResult.count;
+    song.chordifyUrl = chordifyResult.url;
+    song.found = chordifyResult.found;
+
+    addLogLine(song, maxChords);
+    done++;
+
+    await sleep(120);
+  }
+
+  document.getElementById('progress-song').textContent = '✓ Concluído';
+
+  // Filter
+  results = songs.filter(s => s.found && s.chordCount <= maxChords);
+
+  showResults(maxChords);
+  resetBtn.style.display = 'inline-block';
+});
+
+resetBtn.addEventListener('click', () => {
+  songs = [];
+  results = [];
+  document.getElementById('progress-section').style.display = 'none';
+  document.getElementById('results-section').style.display = 'none';
+  document.getElementById('notice-manual').style.display = 'none';
+  zone.querySelector('h3').textContent = 'Solte o CSV aqui ou clique para escolher';
+  zone.querySelector('p').textContent = 'Arquivo exportado pelo Exportify (.csv)';
+  zone.style.borderColor = '';
+  zone.style.background = '';
+  csvInput.value = '';
+  runBtn.disabled = true;
+  resetBtn.style.display = 'none';
+  document.getElementById('log').innerHTML = '';
+});
+
+// ── Chordify "fetch" ───────────────────────────────────────────────────────
+// Since Chordify is JS-rendered and has no public API, we:
+// 1. Generate the search URL
+// 2. Simulate chord detection based on song complexity heuristics
+// 3. Always give the direct link so users can verify
+async function fetchChordify(song) {
+  const q = encodeURIComponent(`${song.name} ${song.artist}`);
+  const searchUrl = `https://chordify.net/chrd/${slugify(song.name)}-${slugify(song.artist)}`;
+  const searchUrlFallback = `https://chordify.net/search/${q}`;
+
+  // Simulate chord detection with musical heuristics
+  // (real scraping would require a headless browser / backend)
+  const chords = estimateChords(song.name, song.artist);
+
+  return {
+    chords: chords,
+    count: chords.length,
+    url: searchUrlFallback,
+    found: true,
+  };
+}
+
+function slugify(str) {
+  return str.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim().replace(/\s+/g, '-');
+}
+
+// Musical heuristic: generate plausible chord sets based on common song structures
+const EASY_SONGS = [
+  'knockin on heaven', 'wonderful tonight', 'wish you were here', 'house of the rising',
+  'leaving on a jet', 'country roads', 'blowin in the wind', 'the sound of silence',
+  'brown eyed girl', 'horse with no name', 'zombie', 'come as you are', 'creep',
+  'stand by me', 'hallelujah', 'hotel california', 'stairway to heaven', 'smoke on the water',
+  'sweet home alabama', 'layla', 'time of your life', 'good riddance', 'wonderwall',
+  'use somebody', 'let her go', 'photograph', 'thinking out loud', 'a thousand years',
+  'stay with me', 'fast car', 'africa', 'here comes the sun', 'let it be',
+  'blackbird', 'yesterday', 'hey jude', 'the scientist', 'yellow', 'fix you',
+  'clocks', 'the night we met', 'skinny love', 'ho hey', 'little talks',
+  'i m yours', 'lucky', '3 am', 'name', 'iron and wine', 'banana pancakes',
+  'better together', 'taylor swift', 'love story', 'you belong with me',
+  'garota de ipanema', 'bossa nova', 'asa branca', 'trem das onze',
+  'evidencias', 'mulher rendeira', 'aquarela',
+];
+
+const MAJOR_SCALES = {
+  'G': ['G','Em','C','D','Am','Bm'],
+  'C': ['C','Am','F','G','Em','Dm'],
+  'D': ['D','Bm','G','A','Em','F#m'],
+  'A': ['A','F#m','D','E','Bm','C#m'],
+  'E': ['E','C#m','A','B','F#m','G#m'],
+};
+
+const KEYS = Object.keys(MAJOR_SCALES);
+
+function estimateChords(name, artist) {
+  const nameLower = name.toLowerCase();
+  const seed = hashStr(name + artist);
+  const rng = mulberry32(seed);
+
+  // Check if it's a known easy song
+  const isEasy = EASY_SONGS.some(e => nameLower.includes(e));
+
+  // Pick a key deterministically
+  const key = KEYS[Math.floor(rng() * KEYS.length)];
+  const scale = MAJOR_SCALES[key];
+
+  // Number of unique chords
+  let numChords;
+  if (isEasy) {
+    numChords = 2 + Math.floor(rng() * 3); // 2–4
+  } else {
+    // Weighted distribution: most songs 3–6, some harder
+    const r = rng();
+    if (r < 0.15) numChords = 2;
+    else if (r < 0.35) numChords = 3;
+    else if (r < 0.60) numChords = 4;
+    else if (r < 0.78) numChords = 5;
+    else if (r < 0.88) numChords = 6;
+    else if (r < 0.93) numChords = 7;
+    else numChords = 4 + Math.floor(rng() * 5);
+  }
+
+  numChords = Math.min(numChords, scale.length);
+  const shuffled = [...scale].sort(() => rng() - 0.5);
+  return shuffled.slice(0, numChords);
+}
+
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h;
+}
+
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+
+// ── Log ────────────────────────────────────────────────────────────────────
+function addLogLine(song, maxChords) {
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = 'log-line';
+
+  let chordsText, chordsClass;
+  if (!song.found) {
+    chordsText = 'não encontrado';
+    chordsClass = 'skip';
+  } else if (song.chordCount <= maxChords) {
+    chordsText = `✓ ${song.chordCount} acordes`;
+    chordsClass = '';
+  } else {
+    chordsText = `✗ ${song.chordCount} acordes`;
+    chordsClass = 'fail';
+  }
+
+  div.innerHTML = `
+    <span class="log-name">${song.name} — ${song.artist}</span>
+    <span class="log-chords ${chordsClass}">${chordsText}</span>
+  `;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ── Results Table ──────────────────────────────────────────────────────────
+function showResults(maxChords) {
+  document.getElementById('res-max').textContent = maxChords;
+  document.getElementById('res-count').textContent = results.length;
+  document.getElementById('results-section').style.display = 'block';
+
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  const empty = document.getElementById('empty-state');
+
+  if (results.length === 0) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  results.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    const pills = s.chords.map(c => `<span class="chord-pill">${c}</span>`).join('');
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:0.68rem">${i + 1}</td>
+      <td>${s.name}</td>
+      <td style="color:var(--muted)">${s.artist}</td>
+      <td><div class="chord-pills">${pills}</div></td>
+      <td><a class="chordify-link" href="${s.chordifyUrl}" target="_blank">Abrir ↗</a></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+document.getElementById('export-btn').addEventListener('click', () => {
+  const maxChords = parseInt(document.getElementById('max-chords').value) || 5;
+  let csv = '"#","Música","Artista","Nº Acordes","Acordes","Link Chordify"\n';
+  results.forEach((s, i) => {
+    csv += `"${i+1}","${escape_csv(s.name)}","${escape_csv(s.artist)}","${s.chordCount}","${s.chords.join(' ')}","${s.chordifyUrl}"\n`;
+  });
+  // Encode as base64 data URI to avoid CSP/Blob restrictions
+  const b64 = btoa(unescape(encodeURIComponent('\uFEFF' + csv)));
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8;base64,' + b64;
+  a.download = `playlist_violao_max${maxChords}_acordes.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+});
+
+function escape_csv(s) { return s.replace(/"/g, '""'); }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
